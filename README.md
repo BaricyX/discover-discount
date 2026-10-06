@@ -6,12 +6,13 @@ An interactive shopping prototype for discovering and comparing everyday Austral
 
 ## Features
 
-- Search and filter offers by product, retailer, distance, stock and promotion dates.
-- Use the mobile Workspace tab to compare offers, manage list quantities, track a budget and download the list.
-- Place matching products on a comparison board and switch between pack price and unit price.
-- Inspect price history, sources, conditions, membership requirements and delivery estimates.
-- Save a shopping list, adjust quantities and track a budget.
-- Configure simulated reminders, share offer links and report issues locally.
+- **Find offers:** search and filter offers by category, retailer, distance, stock and promotion dates, and switch the shopping area.
+- **Compare:** put up to three matching products on the compare board (a floating tray on smaller screens) and switch between pack price and unit price.
+- **Offer details:** price history, sources, conditions, membership requirements and delivery estimates.
+- **Shopping desk:** adjust quantities, track the list against a budget and download the list.
+- **Preferences:** simulated saved-offer reminders, reports and clearing local data.
+
+The layout adapts from a sidebar on desktop, to an icon rail on tablets, to a bottom tab bar on phones.
 
 Prices, stock, price histories, distances and offer sources are fictional demo data. Shopping lists, settings and reports are stored in the current browser. Reminder updates are simulated.
 
