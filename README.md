@@ -7,6 +7,7 @@ An interactive shopping prototype for discovering and comparing everyday Austral
 ## Features
 
 - Search and filter offers by product, retailer, distance, stock and promotion dates.
+- Collapse the offers shelf on mobile to reach the comparison board and shopping list.
 - Place matching products on a comparison board and switch between pack price and unit price.
 - Inspect price history, sources, conditions, membership requirements and delivery estimates.
 - Save a shopping list, adjust quantities and track a budget.

@@ -341,6 +341,7 @@ const resetFilters = () => ({
   expiry: "any",
   showExpired: false,
   filters: false,
+  offersCollapsed: false,
   comparison: [],
   priceLens: "unit",
 });
@@ -580,7 +581,7 @@ function filteredOffers() {
 
 function discover() {
   const result = filteredOffers();
-  return `<div class="heading-row"><div><h1>Shopping <span class="heading-accent">desk</span></h1></div><button class="location-pill" data-action="area">${ico("pin")}${escapeHtml(state.area)} ${ico("down")}</button></div><div class="desk-layout"><section class="shelf" aria-label="Discover offers"><div class="searchbar">${ico("search")}<label for="search" class="sr-only">Search products, brands or retailers</label><input id="search" type="search" value="${escapeHtml(ui.query)}" placeholder="What’s on your list?" autocomplete="off"><button data-action="clear-search" aria-label="Clear search">${ico("close")}</button></div><div class="chips" aria-label="Categories">${["All offers", "Groceries", "Toiletries", "Household"].map((category) => `<button class="chip ${ui.category === category ? "active" : ""}" data-category="${category}" aria-pressed="${ui.category === category}">${category}</button>`).join("")}</div><div class="section-bar"><div class="section-title"><span id="result-count">${result.length} offers</span><h2 id="results-title" class="sr-only">${ui.query ? "Search results" : "Offers"}</h2></div><div class="section-tools"><button class="stock-filter ${ui.available ? "active" : ""}" data-action="stock-filter" aria-pressed="${ui.available}">${ico("check")}In stock</button><button class="filter-toggle" data-action="filters" aria-expanded="${ui.filters}">${ico("settings")}Filters${ui.retailer !== "All retailers" || ui.distance !== "any" || ui.minDiscount !== "0" || ui.expiry !== "any" || ui.showExpired ? " · active" : ""}</button><label class="sort-label"><span class="sr-only">Sort offers</span><select id="sort"><option value="featured" ${ui.sort === "featured" ? "selected" : ""}>Featured</option><option value="product" ${ui.sort === "product" ? "selected" : ""}>By product</option><option value="price" ${ui.sort === "price" ? "selected" : ""}>Pack price</option><option value="discount" ${ui.sort === "discount" ? "selected" : ""}>Discount</option><option value="distance" ${ui.sort === "distance" ? "selected" : ""}>Distance</option><option value="expiry" ${ui.sort === "expiry" ? "selected" : ""}>Expiry</option></select></label></div></div>${ui.filters ? filters() : ""}<div class="grid" id="offer-grid">${result.length ? result.map(card).join("") : emptyResults()}</div></section><aside class="desk-rail" aria-label="Your shopping workspace">${compareBoard()}${listNote()}</aside></div>`;
+  return `<div class="heading-row"><div><h1>Shopping <span class="heading-accent">desk</span></h1></div><button class="location-pill" data-action="area">${ico("pin")}${escapeHtml(state.area)} ${ico("down")}</button></div><div class="desk-layout"><section class="shelf ${ui.offersCollapsed ? "offers-collapsed" : ""}" aria-label="Discover offers"><button id="offers-toggle" class="offers-toggle" data-action="toggle-offers" aria-expanded="${!ui.offersCollapsed}" aria-controls="offers-content" aria-label="${ui.offersCollapsed ? "Expand" : "Collapse"} offers"><span class="offers-toggle-title">Offers <span id="offer-summary-count" class="offers-toggle-count">${result.length}</span></span><span class="offers-toggle-action">${ui.offersCollapsed ? "Expand" : "Collapse"} ${ico("down")}</span></button><div id="offers-content" class="offers-content"><div class="searchbar">${ico("search")}<label for="search" class="sr-only">Search products, brands or retailers</label><input id="search" type="search" value="${escapeHtml(ui.query)}" placeholder="What’s on your list?" autocomplete="off"><button data-action="clear-search" aria-label="Clear search">${ico("close")}</button></div><div class="chips" aria-label="Categories">${["All offers", "Groceries", "Toiletries", "Household"].map((category) => `<button class="chip ${ui.category === category ? "active" : ""}" data-category="${category}" aria-pressed="${ui.category === category}">${category}</button>`).join("")}</div><div class="section-bar"><div class="section-title"><span id="result-count">${result.length} offers</span><h2 id="results-title" class="sr-only">${ui.query ? "Search results" : "Offers"}</h2></div><div class="section-tools"><button class="stock-filter ${ui.available ? "active" : ""}" data-action="stock-filter" aria-pressed="${ui.available}">${ico("check")}In stock</button><button class="filter-toggle" data-action="filters" aria-expanded="${ui.filters}">${ico("settings")}Filters${ui.retailer !== "All retailers" || ui.distance !== "any" || ui.minDiscount !== "0" || ui.expiry !== "any" || ui.showExpired ? " · active" : ""}</button><label class="sort-label"><span class="sr-only">Sort offers</span><select id="sort"><option value="featured" ${ui.sort === "featured" ? "selected" : ""}>Featured</option><option value="product" ${ui.sort === "product" ? "selected" : ""}>By product</option><option value="price" ${ui.sort === "price" ? "selected" : ""}>Pack price</option><option value="discount" ${ui.sort === "discount" ? "selected" : ""}>Discount</option><option value="distance" ${ui.sort === "distance" ? "selected" : ""}>Distance</option><option value="expiry" ${ui.sort === "expiry" ? "selected" : ""}>Expiry</option></select></label></div></div>${ui.filters ? filters() : ""}<div class="grid" id="offer-grid">${result.length ? result.map(card).join("") : emptyResults()}</div></div></section><aside class="desk-rail" aria-label="Your shopping workspace">${compareBoard()}${listNote()}</aside></div>`;
 }
 
 function compareBoard() {
@@ -780,6 +781,8 @@ function updateGrid() {
     : "Offers";
   const counter = document.querySelector("#result-count");
   if (counter) counter.textContent = `${items.length} offers`;
+  const summaryCount = document.querySelector("#offer-summary-count");
+  if (summaryCount) summaryCount.textContent = items.length;
 }
 function downloadList() {
   const items = Object.entries(state.saved);
@@ -929,6 +932,10 @@ document.addEventListener("click", async (event) => {
     render();
   }
   if (action === "area") areaModal();
+  if (action === "toggle-offers") {
+    ui.offersCollapsed = !ui.offersCollapsed;
+    render();
+  }
   if (action === "filters") {
     ui.filters = !ui.filters;
     render();
@@ -939,7 +946,12 @@ document.addEventListener("click", async (event) => {
     document.querySelector("#search").focus();
   }
   if (action === "reset-filters") {
-    ui = { ...resetFilters(), filters: ui.filters, comparison: ui.comparison };
+    ui = {
+      ...resetFilters(),
+      filters: ui.filters,
+      offersCollapsed: ui.offersCollapsed,
+      comparison: ui.comparison,
+    };
     render();
   }
   if (action === "clear-comparison") {

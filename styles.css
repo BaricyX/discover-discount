@@ -305,6 +305,9 @@ h1 {
 .shelf {
   min-width: 0;
 }
+.offers-toggle {
+  display: none;
+}
 .searchbar {
   height: 57px;
   display: flex;
@@ -2387,6 +2390,53 @@ h1 {
   .desk-layout {
     display: block;
   }
+  .offers-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 11px 14px;
+    margin-bottom: 12px;
+    border: 1px solid #cfcec1;
+    border-radius: 12px;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .offers-toggle-title,
+  .offers-toggle-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .offers-toggle-count {
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #eee9dc;
+    color: var(--muted);
+    font-size: 10px;
+  }
+  .offers-toggle-action {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .offers-toggle .icon {
+    width: 15px;
+    height: 15px;
+  }
+  .shelf:not(.offers-collapsed) .offers-toggle .icon {
+    transform: rotate(180deg);
+  }
+  .offers-collapsed .offers-content {
+    display: none;
+  }
+  .offers-collapsed + .desk-rail {
+    margin-top: 24px;
+  }
   .searchbar {
     height: 51px;
     border-radius: 12px;
@@ -2411,11 +2461,12 @@ h1 {
   }
   .section-bar {
     align-items: center;
+    justify-content: flex-end;
     margin-bottom: 15px;
     gap: 7px;
   }
   .section-title {
-    font-size: 10px;
+    display: none;
   }
   .section-tools {
     gap: 11px;
