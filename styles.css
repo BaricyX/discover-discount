@@ -305,9 +305,6 @@ h1 {
 .shelf {
   min-width: 0;
 }
-.offers-toggle {
-  display: none;
-}
 .searchbar {
   height: 57px;
   display: flex;
@@ -805,6 +802,14 @@ h1 {
 }
 
 /* Pinned comparison board and a ruled sticky note. */
+.workspace-board {
+  max-width: 400px;
+  margin: 0 auto 35px;
+  padding-top: 9px;
+}
+.workspace-list-heading {
+  margin-bottom: 16px;
+}
 .desk-rail {
   display: flex;
   flex-direction: column;
@@ -2154,11 +2159,14 @@ h1 {
     padding: 28px 22px 130px;
   }
   .desk-layout {
-    grid-template-columns: minmax(0, 1fr) 236px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }
+  .desk-layout > .desk-rail {
+    display: none;
+  }
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
   }
   .card-art {
@@ -2271,7 +2279,10 @@ h1 {
     border: 0;
     background: transparent;
     color: #828876;
-    min-width: 80px;
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 2px 0;
   }
   .mobile-nav button.active {
     color: #a15134;
@@ -2390,53 +2401,6 @@ h1 {
   .desk-layout {
     display: block;
   }
-  .offers-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    width: 100%;
-    min-height: 48px;
-    padding: 11px 14px;
-    margin-bottom: 12px;
-    border: 1px solid #cfcec1;
-    border-radius: 12px;
-    background: var(--white);
-    color: var(--ink);
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .offers-toggle-title,
-  .offers-toggle-action {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .offers-toggle-count {
-    padding: 2px 7px;
-    border-radius: 6px;
-    background: #eee9dc;
-    color: var(--muted);
-    font-size: 10px;
-  }
-  .offers-toggle-action {
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 500;
-  }
-  .offers-toggle .icon {
-    width: 15px;
-    height: 15px;
-  }
-  .shelf:not(.offers-collapsed) .offers-toggle .icon {
-    transform: rotate(180deg);
-  }
-  .offers-collapsed .offers-content {
-    display: none;
-  }
-  .offers-collapsed + .desk-rail {
-    margin-top: 24px;
-  }
   .searchbar {
     height: 51px;
     border-radius: 12px;
@@ -2461,12 +2425,11 @@ h1 {
   }
   .section-bar {
     align-items: center;
-    justify-content: flex-end;
     margin-bottom: 15px;
     gap: 7px;
   }
   .section-title {
-    display: none;
+    font-size: 10px;
   }
   .section-tools {
     gap: 11px;

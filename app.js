@@ -341,7 +341,6 @@ const resetFilters = () => ({
   expiry: "any",
   showExpired: false,
   filters: false,
-  offersCollapsed: false,
   comparison: [],
   priceLens: "unit",
 });
@@ -455,6 +454,7 @@ let state = readState();
 let ui = resetFilters();
 let toastTimer;
 let previousFocus;
+const compactLayout = window.matchMedia("(max-width: 850px)");
 
 const saveState = () => {
   try {
@@ -473,14 +473,19 @@ function toast(message) {
   toastTimer = setTimeout(() => el.classList.remove("toast"), 3500);
 }
 function nav(mobile = false) {
+  const page = state.page;
   return `<nav class="${mobile ? "mobile-nav" : "nav"}" aria-label="${mobile ? "Mobile" : "Main"} navigation">${[
     ["discover", "discover", "Discover"],
-    ["saved", "bookmark", "Shopping list"],
+    [
+      "saved",
+      mobile ? "compare" : "bookmark",
+      mobile ? "Workspace" : "Shopping list",
+    ],
     ["preferences", "settings", "Preferences"],
   ]
     .map(
-      ([page, icon, label]) =>
-        `<button data-nav="${page}" class="${state.page === page ? "active" : ""}" ${state.page === page ? 'aria-current="page"' : ""}>${ico(icon)}<span>${mobile && page === "saved" ? "My list" : label}</span>${!mobile && page === "saved" ? `<span class="nav-count">${Object.keys(state.saved).length}</span>` : ""}</button>`,
+      ([target, icon, label]) =>
+        `<button data-nav="${target}" class="${page === target ? "active" : ""}" ${page === target ? 'aria-current="page"' : ""}>${ico(icon)}<span>${label}</span>${!mobile && target === "saved" ? `<span class="nav-count">${Object.keys(state.saved).length}</span>` : ""}</button>`,
     )
     .join("")}</nav>`;
 }
@@ -493,8 +498,13 @@ function render() {
       )
     : null;
   const updates = offerUpdates();
+  const content = {
+    discover,
+    saved: savedPage,
+    preferences,
+  }[state.page]();
   document.querySelector("#app").innerHTML =
-    `<div class="shell"><header class="topbar"><a class="brand" href="#" data-nav="discover" aria-label="CartCrush home"><span class="brand-mark">${ico("discover")}</span>CartCrush<span class="brand-period">.</span></a>${nav()}<div class="topbar-right"><button class="demo-label" data-action="demo-info">Demo data</button><button class="updates-button" data-action="updates" aria-label="Offer updates, ${updates.length} updates">${ico("bell")}${updates.length ? `<span>${updates.length}</span>` : ""}</button></div></header><main id="main" class="main" tabindex="-1">${state.page === "discover" ? discover() : state.page === "saved" ? savedPage() : preferences()}</main>${nav(true)}</div>${compareTray()}`;
+    `<div class="shell"><header class="topbar"><a class="brand" href="#" data-nav="discover" aria-label="CartCrush home"><span class="brand-mark">${ico("discover")}</span>CartCrush<span class="brand-period">.</span></a>${nav()}<div class="topbar-right"><button class="demo-label" data-action="demo-info">Demo data</button><button class="updates-button" data-action="updates" aria-label="Offer updates, ${updates.length} updates">${ico("bell")}${updates.length ? `<span>${updates.length}</span>` : ""}</button></div></header><main id="main" class="main" tabindex="-1">${content}</main>${nav(true)}</div>${compareTray()}`;
   if (focusId) document.getElementById(focusId)?.focus();
   else if (focusData) {
     const [key, value] = focusData;
@@ -581,7 +591,7 @@ function filteredOffers() {
 
 function discover() {
   const result = filteredOffers();
-  return `<div class="heading-row"><div><h1>Shopping <span class="heading-accent">desk</span></h1></div><button class="location-pill" data-action="area">${ico("pin")}${escapeHtml(state.area)} ${ico("down")}</button></div><div class="desk-layout"><section class="shelf ${ui.offersCollapsed ? "offers-collapsed" : ""}" aria-label="Discover offers"><button id="offers-toggle" class="offers-toggle" data-action="toggle-offers" aria-expanded="${!ui.offersCollapsed}" aria-controls="offers-content" aria-label="${ui.offersCollapsed ? "Expand" : "Collapse"} offers"><span class="offers-toggle-title">Offers <span id="offer-summary-count" class="offers-toggle-count">${result.length}</span></span><span class="offers-toggle-action">${ui.offersCollapsed ? "Expand" : "Collapse"} ${ico("down")}</span></button><div id="offers-content" class="offers-content"><div class="searchbar">${ico("search")}<label for="search" class="sr-only">Search products, brands or retailers</label><input id="search" type="search" value="${escapeHtml(ui.query)}" placeholder="What’s on your list?" autocomplete="off"><button data-action="clear-search" aria-label="Clear search">${ico("close")}</button></div><div class="chips" aria-label="Categories">${["All offers", "Groceries", "Toiletries", "Household"].map((category) => `<button class="chip ${ui.category === category ? "active" : ""}" data-category="${category}" aria-pressed="${ui.category === category}">${category}</button>`).join("")}</div><div class="section-bar"><div class="section-title"><span id="result-count">${result.length} offers</span><h2 id="results-title" class="sr-only">${ui.query ? "Search results" : "Offers"}</h2></div><div class="section-tools"><button class="stock-filter ${ui.available ? "active" : ""}" data-action="stock-filter" aria-pressed="${ui.available}">${ico("check")}In stock</button><button class="filter-toggle" data-action="filters" aria-expanded="${ui.filters}">${ico("settings")}Filters${ui.retailer !== "All retailers" || ui.distance !== "any" || ui.minDiscount !== "0" || ui.expiry !== "any" || ui.showExpired ? " · active" : ""}</button><label class="sort-label"><span class="sr-only">Sort offers</span><select id="sort"><option value="featured" ${ui.sort === "featured" ? "selected" : ""}>Featured</option><option value="product" ${ui.sort === "product" ? "selected" : ""}>By product</option><option value="price" ${ui.sort === "price" ? "selected" : ""}>Pack price</option><option value="discount" ${ui.sort === "discount" ? "selected" : ""}>Discount</option><option value="distance" ${ui.sort === "distance" ? "selected" : ""}>Distance</option><option value="expiry" ${ui.sort === "expiry" ? "selected" : ""}>Expiry</option></select></label></div></div>${ui.filters ? filters() : ""}<div class="grid" id="offer-grid">${result.length ? result.map(card).join("") : emptyResults()}</div></div></section><aside class="desk-rail" aria-label="Your shopping workspace">${compareBoard()}${listNote()}</aside></div>`;
+  return `<div class="heading-row"><div><h1>Shopping <span class="heading-accent">desk</span></h1></div><button class="location-pill" data-action="area">${ico("pin")}${escapeHtml(state.area)} ${ico("down")}</button></div><div class="desk-layout"><section class="shelf" aria-label="Discover offers"><div class="searchbar">${ico("search")}<label for="search" class="sr-only">Search products, brands or retailers</label><input id="search" type="search" value="${escapeHtml(ui.query)}" placeholder="What’s on your list?" autocomplete="off"><button data-action="clear-search" aria-label="Clear search">${ico("close")}</button></div><div class="chips" aria-label="Categories">${["All offers", "Groceries", "Toiletries", "Household"].map((category) => `<button class="chip ${ui.category === category ? "active" : ""}" data-category="${category}" aria-pressed="${ui.category === category}">${category}</button>`).join("")}</div><div class="section-bar"><div class="section-title"><span id="result-count">${result.length} offers</span><h2 id="results-title" class="sr-only">${ui.query ? "Search results" : "Offers"}</h2></div><div class="section-tools"><button class="stock-filter ${ui.available ? "active" : ""}" data-action="stock-filter" aria-pressed="${ui.available}">${ico("check")}In stock</button><button class="filter-toggle" data-action="filters" aria-expanded="${ui.filters}">${ico("settings")}Filters${ui.retailer !== "All retailers" || ui.distance !== "any" || ui.minDiscount !== "0" || ui.expiry !== "any" || ui.showExpired ? " · active" : ""}</button><label class="sort-label"><span class="sr-only">Sort offers</span><select id="sort"><option value="featured" ${ui.sort === "featured" ? "selected" : ""}>Featured</option><option value="product" ${ui.sort === "product" ? "selected" : ""}>By product</option><option value="price" ${ui.sort === "price" ? "selected" : ""}>Pack price</option><option value="discount" ${ui.sort === "discount" ? "selected" : ""}>Discount</option><option value="distance" ${ui.sort === "distance" ? "selected" : ""}>Distance</option><option value="expiry" ${ui.sort === "expiry" ? "selected" : ""}>Expiry</option></select></label></div></div>${ui.filters ? filters() : ""}<div class="grid" id="offer-grid">${result.length ? result.map(card).join("") : emptyResults()}</div></section><aside class="desk-rail" aria-label="Your shopping workspace">${compareBoard()}${listNote()}</aside></div>`;
 }
 
 function compareBoard() {
@@ -614,6 +624,7 @@ function emptyResults() {
 }
 
 function compareTray() {
+  if (compactLayout.matches && state.page === "saved") return "";
   return ui.comparison.length
     ? `<div class="compare-tray ${state.page === "discover" ? "desk-tray" : ""}" aria-label="Selected offers"><div class="tray-text">${ui.comparison.length} / 3 on board<span>${getOffer(ui.comparison[0]).name}</span></div><button class="tray-clear" data-action="clear-comparison">Clear</button><button class="primary" data-action="open-comparison" ${ui.comparison.length < 2 ? "disabled" : ""}>Compare ${ico("arrow")}</button></div>`
     : "";
@@ -625,7 +636,16 @@ function savedPage() {
     quantity,
   }));
   const { total, over, itemCount, percentage, message } = budgetSummary();
-  return `<div class="heading-row"><div><h1>Shopping <span class="heading-accent">list</span></h1></div><button class="location-pill" data-action="area">${ico("pin")}${escapeHtml(state.area)} ${ico("down")}</button></div><div class="list-layout"><div>${entries.length ? entries.map(({ offer, quantity }) => `<article class="list-item">${art(offer, true)}<div class="list-description"><h3>${offer.name}</h3><p>${offer.retailer} · ${sizeLabel(offer)} · ${unitLabel(offer)}</p>${stockBadge(offer)}<div class="list-controls"><button class="quantity-button" data-quantity="${offer.id}" data-delta="-1" aria-label="Decrease ${offer.name} quantity">−</button><span>${quantity}</span><button class="quantity-button" data-quantity="${offer.id}" data-delta="1" aria-label="Increase ${offer.name} quantity">+</button><button class="details-btn" data-details="${offer.id}">Details</button><button class="details-btn" data-action="compare-similar" data-id="${offer.id}">Compare</button></div></div><div class="list-price">${money(offer.price * quantity)}<button data-save="${offer.id}" aria-label="Remove ${offer.brand} ${offer.name}">Remove</button></div></article>`).join("") : `<div class="empty">${ico("bookmark")}<h2>Your list is empty</h2><button class="primary" data-nav="discover">Find offers ${ico("arrow")}</button></div>`}</div><aside class="budget-card"><div class="receipt-kicker">CARTCRUSH · ESTIMATE</div><h2>Your receipt</h2><label class="budget-field">AUD <input id="budget" type="number" min="0" max="10000" step="0.50" value="${state.budget}" aria-label="Shopping budget in Australian dollars"></label><div class="budget-number">${money(total)}</div><p>Item total · ${itemCount} ${itemCount === 1 ? "item" : "items"}</p><div class="budget-meter ${over ? "over" : ""}"><div style="width:${percentage}%"></div></div><div class="budget-detail ${over ? "over" : ""}" id="budget-status">${message}</div><p class="cost-caption">Travel and delivery extra.</p><button class="primary" data-action="export-list" ${entries.length ? "" : "disabled"}>${ico("export")}Download list</button><button class="reminder-shortcut" data-nav="preferences">${ico("bell")}Reminders ${state.reminders ? "on" : "off"}</button></aside></div>`;
+  const title = compactLayout.matches
+    ? '<span class="heading-accent">Workspace</span>'
+    : 'Shopping <span class="heading-accent">list</span>';
+  const board = compactLayout.matches
+    ? `<div class="workspace-board">${compareBoard()}</div>`
+    : "";
+  const listHeading = compactLayout.matches
+    ? `<div class="object-heading workspace-list-heading"><h2>Shopping list</h2><span>${itemCount}</span></div>`
+    : "";
+  return `<div class="heading-row"><div><h1>${title}</h1></div><button class="location-pill" data-action="area">${ico("pin")}${escapeHtml(state.area)} ${ico("down")}</button></div>${board}<div class="list-layout"><div>${listHeading}${entries.length ? entries.map(({ offer, quantity }) => `<article class="list-item">${art(offer, true)}<div class="list-description"><h3>${offer.name}</h3><p>${offer.retailer} · ${sizeLabel(offer)} · ${unitLabel(offer)}</p>${stockBadge(offer)}<div class="list-controls"><button class="quantity-button" data-quantity="${offer.id}" data-delta="-1" aria-label="Decrease ${offer.name} quantity">−</button><span>${quantity}</span><button class="quantity-button" data-quantity="${offer.id}" data-delta="1" aria-label="Increase ${offer.name} quantity">+</button><button class="details-btn" data-details="${offer.id}">Details</button><button class="details-btn" data-action="compare-similar" data-id="${offer.id}">Compare</button></div></div><div class="list-price">${money(offer.price * quantity)}<button data-save="${offer.id}" aria-label="Remove ${offer.brand} ${offer.name}">Remove</button></div></article>`).join("") : `<div class="empty">${ico("bookmark")}<h2>Your list is empty</h2><button class="primary" data-nav="discover">Find offers ${ico("arrow")}</button></div>`}</div><aside class="budget-card"><div class="receipt-kicker">CARTCRUSH · ESTIMATE</div><h2>Your receipt</h2><label class="budget-field">AUD <input id="budget" type="number" min="0" max="10000" step="0.50" value="${state.budget}" aria-label="Shopping budget in Australian dollars"></label><div class="budget-number">${money(total)}</div><p>Item total · ${itemCount} ${itemCount === 1 ? "item" : "items"}</p><div class="budget-meter ${over ? "over" : ""}"><div style="width:${percentage}%"></div></div><div class="budget-detail ${over ? "over" : ""}" id="budget-status">${message}</div><p class="cost-caption">Travel and delivery extra.</p><button class="primary" data-action="export-list" ${entries.length ? "" : "disabled"}>${ico("export")}Download list</button><button class="reminder-shortcut" data-nav="preferences">${ico("bell")}Reminders ${state.reminders ? "on" : "off"}</button></aside></div>`;
 }
 
 function preferences() {
@@ -781,8 +801,6 @@ function updateGrid() {
     : "Offers";
   const counter = document.querySelector("#result-count");
   if (counter) counter.textContent = `${items.length} offers`;
-  const summaryCount = document.querySelector("#offer-summary-count");
-  if (summaryCount) summaryCount.textContent = items.length;
 }
 function downloadList() {
   const items = Object.entries(state.saved);
@@ -932,10 +950,6 @@ document.addEventListener("click", async (event) => {
     render();
   }
   if (action === "area") areaModal();
-  if (action === "toggle-offers") {
-    ui.offersCollapsed = !ui.offersCollapsed;
-    render();
-  }
   if (action === "filters") {
     ui.filters = !ui.filters;
     render();
@@ -946,12 +960,7 @@ document.addEventListener("click", async (event) => {
     document.querySelector("#search").focus();
   }
   if (action === "reset-filters") {
-    ui = {
-      ...resetFilters(),
-      filters: ui.filters,
-      offersCollapsed: ui.offersCollapsed,
-      comparison: ui.comparison,
-    };
+    ui = { ...resetFilters(), filters: ui.filters, comparison: ui.comparison };
     render();
   }
   if (action === "clear-comparison") {
@@ -1148,6 +1157,8 @@ document.addEventListener("keydown", (event) => {
     }
   }
 });
+compactLayout.addEventListener("change", render);
+
 render();
 const sharedId = new URL(window.location.href).searchParams.get("offer");
 if (sharedId && getOffer(sharedId)) detail(sharedId);
