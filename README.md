@@ -14,6 +14,8 @@ An interactive shopping prototype for discovering and comparing everyday Austral
 
 Prices, stock, price histories, distances and offer sources are fictional demo data. Shopping lists, settings and reports are stored in the current browser. Reminder updates are simulated.
 
+Fonts load online; the offline version uses system fonts.
+
 ## Run locally
 
 Open `index.html` in a browser, or run this command from the project folder:
