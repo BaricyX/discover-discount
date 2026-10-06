@@ -839,6 +839,7 @@ h3 {
 /* Offer cards */
 .offer-card {
   position: relative;
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1108,6 +1109,7 @@ h3 {
 }
 .compare-button {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   gap: 6px;
   height: 36px;
@@ -2907,7 +2909,8 @@ h3 {
     white-space: nowrap;
   }
 }
-@media (max-width: 479px) {
+/* Narrow cards stack their actions. */
+@container (max-width: 240px) {
   .card-actions {
     flex-direction: column-reverse;
     align-items: stretch;
@@ -2919,6 +2922,8 @@ h3 {
   .details-btn {
     justify-content: center;
   }
+}
+@media (max-width: 699px) {
   .compare-tray {
     left: 10px;
     right: 10px;
