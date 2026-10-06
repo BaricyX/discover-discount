@@ -1,0 +1,17 @@
+CartCrush — 本地前端 / Local front-end
+
+1. 解压后打开 CartCrush 文件夹。
+2. 双击 index.html，使用浏览器查看网页。
+3. 如需用本地网址运行，在这个文件夹打开终端并执行：
+   python3 -m http.server 4173 --bind 127.0.0.1
+   然后打开 http://127.0.0.1:4173/
+   结束时在终端按 Control+C。
+
+index.html：页面入口
+styles.css：页面样式
+app.js：商品示例数据和交互功能
+
+商品、价格、库存及历史为演示数据。清单与设置保存在当前浏览器中。
+压缩包包含网页文件；当前浏览器里已经收藏的清单与设置需要在该浏览器继续使用。
+字体联网时加载，离线时使用系统字体。
+在线版本：https://baricyx.github.io/discover-discount/
