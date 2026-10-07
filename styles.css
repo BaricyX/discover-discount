@@ -921,10 +921,9 @@ h3 {
 }
 .availability-line {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px dashed var(--line);
@@ -968,10 +967,13 @@ h3 {
 .checked {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 4px;
   font-size: 11.5px;
   color: var(--muted);
+}
+.checked span {
+  white-space: nowrap;
 }
 .best-unit {
   display: inline-flex;
@@ -2770,8 +2772,7 @@ h3 {
     display: none;
   }
   .checked {
-    margin-top: 6px;
-    font-size: 10.5px;
+    font-size: 11px;
   }
   .price {
     font-size: 23px;
