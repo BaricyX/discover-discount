@@ -789,7 +789,7 @@ h3 {
   left: 14px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: var(--coral);
+  background: var(--coral-ink);
   color: #fff;
   font-size: 12px;
   font-weight: 800;
@@ -901,7 +901,7 @@ h3 {
 }
 .previous {
   font-size: 13px;
-  color: #9a9a8d;
+  color: #6f7466;
   text-decoration: line-through;
 }
 .unit-price {
@@ -970,7 +970,47 @@ h3 {
   gap: 2px;
   margin-top: 8px;
   font-size: 11.5px;
-  color: #858b7d;
+  color: var(--muted);
+}
+.best-unit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 6px 0 0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #e3f1e6;
+  font-size: 11px;
+  font-weight: 700;
+  color: #245f3d;
+}
+.best-unit .icon {
+  width: 12px;
+  height: 12px;
+}
+.compare-button.alt-button {
+  background: #fff4ec;
+  border-color: #f0cbb3;
+  color: var(--coral-ink);
+}
+.compare-button.alt-button:hover {
+  background: #fde6d6;
+}
+.modal .privacy-small {
+  margin: 10px 0 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.notice small {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+.notice .text-button {
+  margin-top: 6px;
+  padding: 0;
+  font-weight: 700;
+  color: var(--coral-ink);
 }
 .card-actions {
   display: flex;
@@ -2725,9 +2765,12 @@ h3 {
   .card-title {
     font-size: 15px;
   }
-  .brand-line,
-  .checked {
+  .brand-line {
     display: none;
+  }
+  .checked {
+    margin-top: 6px;
+    font-size: 10.5px;
   }
   .price {
     font-size: 23px;

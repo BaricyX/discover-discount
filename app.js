@@ -378,6 +378,22 @@ const stockLabel = (offer) =>
         unknown: "Stock unconfirmed",
       }[offer.stock];
 const getOffer = (id) => offers.find((offer) => offer.id === id);
+// Rough walking estimate, about 12 minutes per km.
+const walkLabel = (km) => `~${Math.max(1, Math.round(km * 12))} min walk`;
+const checkedShort = (offer) =>
+  offer.checked.startsWith("10 Oct, ")
+    ? "today " + offer.checked.slice(8)
+    : offer.checked.split(",")[0];
+const isUnavailable = (offer) => offer.stock === "sold" || isExpired(offer);
+function bestUnitInGroup(offer) {
+  if (isUnavailable(offer) || offer.stock !== "available") return false;
+  const rivals = offers.filter(
+    (other) => other.group === offer.group && other.stock === "available" && !isExpired(other),
+  );
+  return rivals.length > 1 && unitValue(offer) === Math.min(...rivals.map(unitValue));
+}
+const MEMBER_NOTE =
+  "Member price needs the store's loyalty card. CartCrush ranks offers by the standard price.";
 
 const stockClass = (offer) => (isExpired(offer) ? "sold" : offer.stock);
 const stockBadge = (offer) =>
@@ -388,6 +404,15 @@ function matchingOffers(id) {
   const group = getOffer(id).group;
   return offers
     .filter((offer) => offer.group === group && !isExpired(offer))
+    .slice(0, 3);
+}
+function alternativeOffers(id) {
+  const offer = getOffer(id);
+  const rank = (other) =>
+    other.id === id ? 0 : { available: 1, unknown: 2, sold: 3 }[other.stock];
+  return offers
+    .filter((other) => other.group === offer.group && !isExpired(other))
+    .sort((a, b) => rank(a) - rank(b) || unitValue(a) - unitValue(b))
     .slice(0, 3);
 }
 function lowestAvailablePrice(selected, price = unitValue) {
@@ -543,11 +568,11 @@ function productDrawing(offer) {
 }
 
 function art(offer, small = false) {
-  return `<div class="card-art ${offer.tone}"><span class="art-orbit" aria-hidden="true"></span>${productDrawing(offer)}${small ? "" : `<span class="art-meta ${offer.memberPrice ? "member-tag" : ""}">${isExpired(offer) ? "Expired" : offer.memberPrice ? "Member offer" : Math.round(discount(offer)) + "% off"}</span>${offer.sponsored ? '<span class="sponsored-label">Sponsored</span>' : ""}<button class="save-btn ${state.saved[offer.id] ? "saved" : ""}" data-save="${offer.id}" aria-label="${state.saved[offer.id] ? "Remove" : "Save"} ${escapeHtml(offer.brand + " " + offer.name)} at ${offer.retailer}" aria-pressed="${!!state.saved[offer.id]}">${ico(state.saved[offer.id] ? "check" : "bookmark")}</button>`}</div>`;
+  return `<div class="card-art ${offer.tone}"><span class="art-orbit" aria-hidden="true"></span>${productDrawing(offer)}${small ? "" : `<span class="art-meta ${offer.memberPrice ? "member-tag" : ""}">${isExpired(offer) ? "Expired" : offer.memberPrice ? "Member offer" : "Save " + money(offer.previous - offer.price)}</span>${offer.sponsored ? '<span class="sponsored-label">Sponsored</span>' : ""}<button class="save-btn ${state.saved[offer.id] ? "saved" : ""}" data-save="${offer.id}" aria-label="${state.saved[offer.id] ? "Remove" : "Save"} ${escapeHtml(offer.brand + " " + offer.name)} at ${offer.retailer}" aria-pressed="${!!state.saved[offer.id]}">${ico(state.saved[offer.id] ? "check" : "bookmark")}</button>`}</div>`;
 }
 
 function card(offer) {
-  return `<article class="offer-card ${ui.comparison.includes(offer.id) ? "on-board" : ""} ${isExpired(offer) ? "expired" : ""}">${art(offer)}<div class="card-body"><div class="retailer-line"><span class="retailer-dot ${offer.retailer === "Coles" ? "coles" : offer.retailer === "ALDI" ? "aldi" : offer.retailer === "Chemist Warehouse" ? "chemist" : ""}"></span>${offer.retailer}<span class="pack-size">${sizeLabel(offer)}</span></div><h3 class="card-title">${offer.name}</h3><div class="brand-line">${offer.brand}</div><div class="price-ticket"><div class="price-line"><span class="price">${money(offer.price)}</span><span class="previous" title="Previous sample selling price" aria-label="Previous price ${money(offer.previous)}">${money(offer.previous)}</span></div><div class="unit-price">${unitLabel(offer)}</div>${offer.memberPrice ? `<span class="member-price">Members ${money(offer.memberPrice)}</span>` : ""}</div><div class="availability-line">${stockBadge(offer)}<span class="distance">${ico("pin")}${offer.distances[state.area].toFixed(1)} km</span></div><div class="checked"><span>${isExpired(offer) ? "Ended" : "Until"} ${offer.expiry.split(" 2026")[0]}${offer.code ? " · " + offer.code : ""}</span></div><div class="card-actions"><button class="details-btn" data-details="${offer.id}">Details ${ico("chevron")}</button><button class="compare-button ${ui.comparison.includes(offer.id) ? "selected" : ""}" data-compare="${offer.id}" aria-pressed="${ui.comparison.includes(offer.id)}">${ico(ui.comparison.includes(offer.id) ? "check" : "compare")}${ui.comparison.includes(offer.id) ? "On board" : "+ Compare"}</button></div></div></article>`;
+  return `<article class="offer-card ${ui.comparison.includes(offer.id) ? "on-board" : ""} ${isExpired(offer) ? "expired" : ""}">${art(offer)}<div class="card-body"><div class="retailer-line"><span class="retailer-dot ${offer.retailer === "Coles" ? "coles" : offer.retailer === "ALDI" ? "aldi" : offer.retailer === "Chemist Warehouse" ? "chemist" : ""}"></span>${offer.retailer}<span class="pack-size">${sizeLabel(offer)}</span></div><h3 class="card-title">${offer.name}</h3><div class="brand-line">${offer.brand}</div><div class="price-ticket"><div class="price-line"><span class="price">${money(offer.price)}</span><span class="previous" title="Previous sample selling price" aria-label="Previous price ${money(offer.previous)}">${money(offer.previous)}</span></div><div class="unit-price">${unitLabel(offer)}</div>${bestUnitInGroup(offer) ? `<span class="best-unit">${ico("check")}Best unit price</span>` : ""}${offer.memberPrice ? `<span class="member-price" title="${MEMBER_NOTE}">Members ${money(offer.memberPrice)} · card needed</span>` : ""}</div><div class="availability-line">${stockBadge(offer)}<span class="distance">${ico("pin")}${offer.distances[state.area].toFixed(1)} km · ${Math.max(1, Math.round(offer.distances[state.area] * 12))} min</span></div><div class="checked"><span>${offer.source} · ${checkedShort(offer)}</span><span>${isExpired(offer) ? "Ended" : "Until"} ${offer.expiry.split(" 2026")[0]}${offer.code ? " · " + offer.code : ""}</span></div><div class="card-actions"><button class="details-btn" data-details="${offer.id}">Details ${ico("chevron")}</button>${isUnavailable(offer) ? `<button class="compare-button alt-button" data-action="alternatives" data-id="${offer.id}">${ico("arrow")}Alternatives</button>` : `<button class="compare-button ${ui.comparison.includes(offer.id) ? "selected" : ""}" data-compare="${offer.id}" aria-pressed="${ui.comparison.includes(offer.id)}">${ico(ui.comparison.includes(offer.id) ? "check" : "compare")}${ui.comparison.includes(offer.id) ? "On board" : "+ Compare"}</button>`}</div></div></article>`;
 }
 
 function filteredOffers() {
@@ -650,7 +675,7 @@ function savedPage() {
     icon: "desk",
     title: 'Shopping <span class="heading-accent">desk</span>',
   });
-  return `${hero}<div class="list-layout"><section class="list-column" aria-labelledby="list-title"><div class="object-heading"><h2 id="list-title">Shopping list</h2><span>${itemCount} ${itemCount === 1 ? "item" : "items"}</span></div>${entries.length ? entries.map(({ offer, quantity }) => `<article class="list-item">${art(offer, true)}<div class="list-description"><h3>${offer.name}</h3><p>${offer.retailer} · ${sizeLabel(offer)} · ${unitLabel(offer)}</p>${stockBadge(offer)}<div class="list-controls"><button class="quantity-button" data-quantity="${offer.id}" data-delta="-1" aria-label="Decrease ${offer.name} quantity">−</button><span>${quantity}</span><button class="quantity-button" data-quantity="${offer.id}" data-delta="1" aria-label="Increase ${offer.name} quantity">+</button><button class="details-btn" data-details="${offer.id}">Details</button><button class="details-btn" data-action="compare-similar" data-id="${offer.id}">Compare</button></div></div><div class="list-price">${money(offer.price * quantity)}<button data-save="${offer.id}" aria-label="Remove ${offer.brand} ${offer.name}">Remove</button></div></article>`).join("") : `<div class="empty">${ico("bookmark")}<h2>Your list is empty</h2><button class="primary" data-nav="discover">Find offers ${ico("arrow")}</button></div>`}</section><aside class="budget-card"><h2>Budget</h2><label class="budget-field">AUD <input id="budget" type="number" min="0" max="10000" step="0.50" value="${state.budget}" aria-label="Shopping budget in Australian dollars"></label><div class="budget-number">${money(total)}</div><p>Item total</p><div class="budget-meter ${over ? "over" : ""}"><div style="width:${percentage}%"></div></div><div class="budget-detail ${over ? "over" : ""}" id="budget-status">${message}</div><button class="primary" data-action="export-list" ${entries.length ? "" : "disabled"}>${ico("export")}Download list</button></aside></div>`;
+  return `${hero}<div class="list-layout"><section class="list-column" aria-labelledby="list-title"><div class="object-heading"><h2 id="list-title">Shopping list</h2><span>${itemCount} ${itemCount === 1 ? "item" : "items"}</span></div>${entries.length ? entries.map(({ offer, quantity }) => `<article class="list-item">${art(offer, true)}<div class="list-description"><h3>${offer.name}</h3><p>${offer.retailer} · ${sizeLabel(offer)} · ${unitLabel(offer)}</p>${stockBadge(offer)}<div class="list-controls"><button class="quantity-button" data-quantity="${offer.id}" data-delta="-1" aria-label="Decrease ${offer.name} quantity">−</button><span>${quantity}</span><button class="quantity-button" data-quantity="${offer.id}" data-delta="1" aria-label="Increase ${offer.name} quantity">+</button><button class="details-btn" data-details="${offer.id}">Details</button><button class="details-btn" data-action="compare-similar" data-id="${offer.id}">Compare</button></div></div><div class="list-price">${money(offer.price * quantity)}<button data-save="${offer.id}" aria-label="Remove ${offer.brand} ${offer.name}">Remove</button></div></article>`).join("") : `<div class="empty">${ico("bookmark")}<h2>Your list is empty</h2><button class="primary" data-nav="discover">Find offers ${ico("arrow")}</button></div>`}</section><aside class="budget-card"><h2>Budget</h2><label class="budget-field">AUD <input id="budget" type="number" min="0" max="10000" step="0.50" value="${state.budget}" aria-label="Shopping budget in Australian dollars"></label><div class="budget-number">${money(total)}</div><p>Item total</p><div class="budget-meter ${over ? "over" : ""}"><div style="width:${percentage}%"></div></div><div class="budget-detail ${over ? "over" : ""}" id="budget-status">${message}</div><p class="cost-caption">Items only · travel and delivery extra.</p><button class="primary" data-action="export-list" ${entries.length ? "" : "disabled"}>${ico("export")}Download list</button></aside></div>`;
 }
 
 function preferences() {
@@ -681,7 +706,7 @@ function preferences() {
           )
           .join("")}</div>`
       : '<p class="privacy-small">No reports.</p>'
-  }</section><section class="settings-card"><h2><span class="card-icon sage">${ico("reset")}</span>Local data</h2><button class="secondary" data-action="reset-demo">${ico("reset")}Clear data</button></section></div>`;
+  }</section><section class="settings-card"><h2><span class="card-icon sage">${ico("reset")}</span>Local data</h2><p class="privacy-small">Your list, reminders and reports stay on this device. Your area is picked by hand; location is never used.</p><button class="secondary" data-action="reset-demo">${ico("reset")}Clear data</button></section></div>`;
 }
 
 function openModal(title, content, wide = false) {
@@ -702,7 +727,7 @@ function detail(id) {
   if (!offer) return;
   openModal(
     "Offer details",
-    `<div class="detail-product">${art(offer, true)}<div><p>${offer.retailer}${offer.sponsored ? " · Sponsored" : ""}</p><h3>${offer.name}</h3><p>${offer.brand} · ${sizeLabel(offer)}</p><div class="price-line"><span class="price">${money(offer.price)}</span><span class="previous" title="Previous sample selling price">${money(offer.previous)}</span></div><div class="unit-price">${unitLabel(offer)}</div></div></div><div class="facts"><div class="fact"><span>Store</span><strong>${offer.locations[state.area]} · ${offer.distances[state.area]} km</strong></div><div class="fact"><span>Stock</span><strong>${stockBadge(offer)}</strong></div><div class="fact"><span>Source</span><strong>${offer.source}</strong></div><div class="fact"><span>Checked</span><strong>${offer.checked}</strong></div><div class="fact"><span>Promotion</span><strong>${promotionLabel(offer, true)}</strong></div><div class="fact"><span>Applies to</span><strong>${offer.channel}</strong></div></div><div class="notice ${offer.stock !== "available" || isExpired(offer) ? "warning" : ""}">${offer.condition}</div><div class="detail-section"><h3>Price history</h3>${historyPanel(offer)}</div><div class="detail-section"><h3>Cost per pack</h3><div class="facts cost-facts"><div class="fact"><span>Pickup · travel extra</span><strong>${money(offer.price)}</strong></div><div class="fact"><span>Delivery estimate${offer.delivery !== null ? " · fee " + money(offer.delivery) : ""}</span><strong>${offer.delivery === null ? "Unavailable" : money(offer.price + offer.delivery)}</strong></div></div></div><div class="modal-footer"><button class="primary" data-action="detail-save" data-id="${id}">${ico("bookmark")}${state.saved[id] ? "Saved" : "Save"}</button><button class="secondary" data-action="compare-similar" data-id="${id}">${ico("compare")}Compare offers</button><button class="text-button" data-action="report" data-id="${id}">Report issue</button><button class="text-button" data-action="share" data-id="${id}">${ico("share")} Share</button></div>`,
+    `<div class="detail-product">${art(offer, true)}<div><p>${offer.retailer}${offer.sponsored ? " · Sponsored" : ""}</p><h3>${offer.name}</h3><p>${offer.brand} · ${sizeLabel(offer)}</p><div class="price-line"><span class="price">${money(offer.price)}</span><span class="previous" title="Previous sample selling price">${money(offer.previous)}</span></div><div class="unit-price">${unitLabel(offer)}</div></div></div><div class="facts"><div class="fact"><span>Store</span><strong>${offer.locations[state.area]} · ${offer.distances[state.area]} km · ${walkLabel(offer.distances[state.area])}</strong></div><div class="fact"><span>Stock</span><strong>${stockBadge(offer)}</strong></div><div class="fact"><span>Source</span><strong>${offer.source}</strong></div><div class="fact"><span>Checked</span><strong>${offer.checked}</strong></div><div class="fact"><span>Promotion</span><strong>${promotionLabel(offer, true)}</strong></div><div class="fact"><span>Applies to</span><strong>${offer.channel}</strong></div></div><div class="notice ${offer.stock !== "available" || isExpired(offer) ? "warning" : ""}">${offer.condition}${offer.memberPrice ? `<br><small>${MEMBER_NOTE}</small>` : ""}${isUnavailable(offer) ? `<br><button class="text-button" data-action="alternatives" data-id="${id}">See available alternatives</button>` : ""}</div><div class="detail-section"><h3>Price history</h3>${historyPanel(offer)}</div><div class="detail-section"><h3>Cost per pack</h3><div class="facts cost-facts"><div class="fact"><span>Pickup · travel extra</span><strong>${money(offer.price)}</strong></div><div class="fact"><span>Delivery estimate${offer.delivery !== null ? " · fee " + money(offer.delivery) : ""}</span><strong>${offer.delivery === null ? "Unavailable" : money(offer.price + offer.delivery)}</strong></div></div><p class="cost-caption">Confirm final fees and stock with the retailer.</p></div><div class="modal-footer"><button class="primary" data-action="detail-save" data-id="${id}">${ico("bookmark")}${state.saved[id] ? "Saved" : "Save"}</button><button class="secondary" data-action="compare-similar" data-id="${id}">${ico("compare")}Compare offers</button><button class="text-button" data-action="report" data-id="${id}">Report issue</button><button class="text-button" data-action="share" data-id="${id}">${ico("share")} Share</button></div>`,
   );
 }
 
@@ -753,7 +778,7 @@ function comparison() {
     `<tr><th scope="row">${label}</th>${selected.map((offer) => `<td>${renderCell(offer)}</td>`).join("")}</tr>`;
   openModal(
     "Compare offers",
-    `<div class="receipt-title"><h3>${selected[0].name}</h3></div>${priceLens(selected)}<p class="swipe-hint">Swipe the receipt to compare →</p><div class="comparison-scroll"><table class="comparison"><thead><tr><th scope="col">${selected[0].name}</th>${selected.map((offer) => `<th scope="col"><div class="compare-product-art">${art(offer, true)}</div>${offer.retailer}<br><small>${offer.brand}${offer.sponsored ? " · Sponsored" : ""}</small></th>`).join("")}</tr></thead><tbody>${row("Pack price", (offer) => `<span class="price">${money(offer.price)}</span>`)}${row("Pack size", sizeLabel)}${row("Unit price", (offer) => `<strong>${unitLabel(offer)}</strong>${offer.stock === "available" && !isExpired(offer) && unitValue(offer) === best ? '<br><span class="best-value">Lowest · stock reported</span>' : ""}`)}${row("Store", (offer) => `${offer.locations[state.area]}<br><small>${offer.distances[state.area]} km</small>`)}${row("Stock", stockBadge)}${row("Pickup", (offer) => `${money(offer.price)}<br><small>Travel extra</small>`)}${row("Delivery estimate", (offer) => (offer.delivery === null ? "Unavailable" : `${money(offer.price + offer.delivery)}<br><small>Includes ${money(offer.delivery)} fee</small>`))}${row("Conditions", (offer) => offer.condition)}${row("Promotion", (offer) => promotionLabel(offer))}${row("Applies to", (offer) => offer.channel)}${row("Source / checked", (offer) => `${offer.source}<br><small>${offer.checked}</small>`)}${row("List", (offer) => `<button class="${state.saved[offer.id] ? "secondary" : "primary"}" data-action="compare-save" data-id="${offer.id}">${ico(state.saved[offer.id] ? "check" : "bookmark")}${state.saved[offer.id] ? "Saved" : "Save"}</button>`)}</tbody></table></div>`,
+    `<div class="receipt-title"><h3>${selected[0].name}</h3><p>Brands may differ · compare unit price</p></div>${priceLens(selected)}<p class="swipe-hint">Swipe the receipt to compare →</p><div class="comparison-scroll"><table class="comparison"><thead><tr><th scope="col">${selected[0].name}</th>${selected.map((offer) => `<th scope="col"><div class="compare-product-art">${art(offer, true)}</div>${offer.retailer}<br><small>${offer.brand}${offer.sponsored ? " · Sponsored" : ""}</small></th>`).join("")}</tr></thead><tbody>${row("Pack price", (offer) => `<span class="price">${money(offer.price)}</span>`)}${row("Pack size", sizeLabel)}${row("Unit price", (offer) => `<strong>${unitLabel(offer)}</strong>${offer.stock === "available" && !isExpired(offer) && unitValue(offer) === best ? '<br><span class="best-value">Lowest · stock reported</span>' : ""}`)}${row("Store", (offer) => `${offer.locations[state.area]}<br><small>${offer.distances[state.area]} km · ${walkLabel(offer.distances[state.area])}</small>`)}${row("Stock", stockBadge)}${row("Pickup", (offer) => `${money(offer.price)}<br><small>Travel extra</small>`)}${row("Delivery estimate", (offer) => (offer.delivery === null ? "Unavailable" : `${money(offer.price + offer.delivery)}<br><small>Includes ${money(offer.delivery)} fee</small>`))}${row("Conditions", (offer) => offer.condition)}${row("Promotion", (offer) => promotionLabel(offer))}${row("Applies to", (offer) => offer.channel)}${row("Source / checked", (offer) => `${offer.source}<br><small>${offer.checked}</small>`)}${row("List", (offer) => `<button class="${state.saved[offer.id] ? "secondary" : "primary"}" data-action="compare-save" data-id="${offer.id}">${ico(state.saved[offer.id] ? "check" : "bookmark")}${state.saved[offer.id] ? "Saved" : "Save"}</button>`)}</tbody></table></div>`,
     true,
   );
 }
@@ -778,7 +803,7 @@ function historyPanel(offer) {
 function areaModal() {
   openModal(
     "Shopping area",
-    `<form id="area-form"><label class="form-row"><span class="sr-only">Shopping area</span><select name="area">${SHOPPING_AREAS.map((area) => `<option ${state.area === area ? "selected" : ""}>${area}</option>`).join("")}</select></label><button class="primary" type="submit">Apply</button></form>`,
+    `<form id="area-form"><label class="form-row"><span class="sr-only">Shopping area</span><select name="area">${SHOPPING_AREAS.map((area) => `<option ${state.area === area ? "selected" : ""}>${area}</option>`).join("")}</select></label><p class="privacy-small">Chosen by you · location is not used.</p><button class="primary" type="submit">Apply</button></form>`,
   );
 }
 
@@ -1004,6 +1029,16 @@ document.addEventListener("click", async (event) => {
     const related = matchingOffers(id);
     if (related.length < 2) {
       toast("No matching offers.");
+      return;
+    }
+    ui.comparison = related.map((offer) => offer.id);
+    render();
+    comparison();
+  }
+  if (action === "alternatives") {
+    const related = alternativeOffers(id);
+    if (related.length < 2) {
+      toast("No other offers for this product right now.");
       return;
     }
     ui.comparison = related.map((offer) => offer.id);
